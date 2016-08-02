@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Author: Lime
 # @Date:   2013-10-28 13:39:48
-# @Last Modified by:   Lime
-# @Last Modified time: 2016-03-06 10:23:52
+# @Last Modified by:   Gillett Hernandez
+# @Last Modified time: 2016-08-02 13:59:46
 
 import os
 import sys
@@ -426,7 +426,11 @@ class BackgroundAddHeaderThread(threading.Thread):
 
         try:
             with open(self.path, 'r') as f:
-                contents = header + f.read()
+                firstline = f.readline()
+                if firstline.startswith("#!"):
+                    contents = firstline + header + f.read()
+                else:
+                    contents = header + firstline + f.read()
 
             with open(self.path, 'w') as f:
                 f.write(contents)
@@ -449,7 +453,14 @@ class AddFileHeaderCommand(sublime_plugin.TextCommand):
                 options.update({'c_time': c_time})
 
         header = render_template(syntax_type, part, options)
-        self.view.insert(edit, 0, header)
+        ## problem area FIX THIS
+        firstline = self.view.line(0)
+        S = self.view.substr(firstline)
+        if S.startswith("#!"):
+            S = S.strip()
+            self.view.replace(edit, firstline, S + "\n" + header)
+        else:
+            self.view.insert(edit, 0, header)
 
 
 class FileHeaderAddHeaderCommand(sublime_plugin.WindowCommand):
@@ -566,7 +577,7 @@ class FileHeaderAddHeaderCommand(sublime_plugin.WindowCommand):
 
 
 class FileHeaderReplaceCommand(sublime_plugin.TextCommand):
-    '''Replace contents in the `region` with `stirng`'''
+    '''Replace contents in the `region` with `string`'''
 
     def run(self, edit, a, b, strings):
         region = sublime.Region(int(a), int(b))
